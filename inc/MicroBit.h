@@ -30,14 +30,12 @@ DEALINGS IN THE SOFTWARE.
 
 #include "MicroBitConfig.h"
 #include "MicroBitHeapAllocator.h"
-#include "MicroBitPanic.h"
 #include "ErrorNo.h"
 #include "Matrix4.h"
 #include "MicroBitCompat.h"
 #include "MicroBitComponent.h"
 #include "ManagedType.h"
 #include "ManagedString.h"
-#include "MicroBitImage.h"
 #include "MicroBitFont.h"
 #include "MicroBitEvent.h"
 #include "DynamicPwm.h"
@@ -49,19 +47,13 @@ DEALINGS IN THE SOFTWARE.
 #include "MicroBitCompass.h"
 #include "MicroBitAccelerometer.h"
 #include "MicroBitThermometer.h"
-#include "MicroBitLightSensor.h"
 #include "MicroBitMultiButton.h"
 
 #include "MicroBitSerial.h"
 #include "MicroBitIO.h"
-#include "MicroBitDisplay.h"
 
 #include "MicroBitFiber.h"
 #include "MicroBitMessageBus.h"
-
-#include "MicroBitBLEManager.h"
-#include "MicroBitRadio.h"
-#include "MicroBitStorage.h"
 
 // MicroBit::flags values
 #define MICROBIT_FLAG_SCHEDULER_RUNNING         0x00000001
@@ -82,6 +74,12 @@ DEALINGS IN THE SOFTWARE.
 #define MICROBIT_PIN_SCL                        P0_0
 
 #define MICROBIT_DEFAULT_TICK_PERIOD            FIBER_TICK_PERIOD_MS
+
+
+/**
+ * Resets the micro:bit.
+ */
+void microbit_reset();
 
 /**
   * Class definition for a MicroBit device.
@@ -123,7 +121,6 @@ class MicroBit
     MicroBitMessageBus      MessageBus;
 
     // Member variables to represent each of the core components on the device.
-    MicroBitDisplay         display;
     MicroBitButton          buttonA;
     MicroBitButton          buttonB;
     MicroBitMultiButton     buttonAB;
@@ -133,12 +130,6 @@ class MicroBit
 
     //An object of available IO pins on the device
     MicroBitIO              io;
-
-    // Bluetooth related member variables.
-	MicroBitBLEManager		bleManager;
-    MicroBitRadio           radio;
-    BLEDevice               *ble;
-
     /**
       * Constructor.
       * Create a representation of a MicroBit device as a global singleton.
@@ -323,13 +314,6 @@ class MicroBit
       * TODO: handle overflow case.
       */
     const char *systemVersion();
-
-    /**
-      * Triggers a microbit panic where an infinite loop will occur swapping between the panicFace and statusCode if provided.
-      *
-      * @param statusCode the status code of the associated error. Status codes must be in the range 0-255.
-      */
-    void panic(int statusCode = 0);
 
 };
 

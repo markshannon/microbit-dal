@@ -739,10 +739,7 @@ void idle()
     // If the above did create any useful work, enter power efficient sleep.
     if(scheduler_runqueue_empty())
     {
-        if (uBit.ble)
-            uBit.ble->waitForEvent();
-        else
-            __WFI();
+        __WFI();
     }
 }
 /**

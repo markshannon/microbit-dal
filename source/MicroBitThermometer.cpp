@@ -160,27 +160,18 @@ void MicroBitThermometer::updateTemperature()
     // The compass module also has a temperature sensor, and has the lowest power consumption, so will run the cooler...
     // ...however it isn't trimmed for accuracy during manufacture, so requires calibration.
 
-    if (uBit.ble)
-    {
-        // If Bluetooth is enabled, we need to go through the Nordic software to safely do this
-        sd_temp_get(&processorTemperature);
-    }
-    else
-    {
-        // Othwerwise, we access the information directly...
-        uint32_t *TEMP = (uint32_t *)0x4000C508;
+    // Othwerwise, we access the information directly...
+    uint32_t *TEMP = (uint32_t *)0x4000C508;
 
-        NRF_TEMP->TASKS_START = 1;
+    NRF_TEMP->TASKS_START = 1;
 
-        while (NRF_TEMP->EVENTS_DATARDY == 0);
+    while (NRF_TEMP->EVENTS_DATARDY == 0);
 
-        NRF_TEMP->EVENTS_DATARDY = 0;  
+    NRF_TEMP->EVENTS_DATARDY = 0;
 
-        processorTemperature = *TEMP;
+    processorTemperature = *TEMP;
 
-        NRF_TEMP->TASKS_STOP = 1;
-    }
-
+    NRF_TEMP->TASKS_STOP = 1;
 
     // Record our reading...
     temperature = processorTemperature / 4;

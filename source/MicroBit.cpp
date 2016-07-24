@@ -47,47 +47,13 @@ DEALINGS IN THE SOFTWARE.
 #endif
 
 /**
-  * custom function for panic for malloc & new due to scoping issue.
-  */
-void panic(int statusCode)
-{
-    uBit.panic(statusCode);
-}
-
-/**
-  * Callback that performs a hard reset when a BLE GAP disconnect occurs.
-  * Only used when an explicit reset is invoked locally whilst a BLE connection is in progress.
-  * This allows for a clean diconnect of the BLE connection before resetting.
-  */
-void bleDisconnectionResetCallback(const Gap::DisconnectionCallbackParams_t *)
-{
-    NVIC_SystemReset();
-}
-
-/**
   * Perform a hard reset of the micro:bit.
   * If BLE connected, then try to signal a disconnect first
   */
 void
 microbit_reset()
 {
-    if(uBit.ble && uBit.ble->getGapState().connected) {
-        uBit.ble->onDisconnection(bleDisconnectionResetCallback);
-
-        uBit.ble->gap().disconnect(Gap::REMOTE_USER_TERMINATED_CONNECTION);
-        // We should be reset by the disconnection callback, so we wait to
-        // allow that to happen.  If it doesn't happen, then we fall through to the
-        // hard rest here.  (For example there is a race condition where
-        // the remote device disconnects between us testing the connection
-        // state and re-setting the disconnection callback).
-        uBit.sleep(1000);
-    }
     NVIC_SystemReset();
-}
-
-void bleDisconnectionCallback(const Gap::DisconnectionCallbackParams_t *)
-{
-    uBit.ble->startAdvertising();
 }
 
 void MicroBit::onABListenerRegisteredEvent(MicroBitEvent evt)
@@ -132,7 +98,6 @@ MicroBit::MicroBit() :
     i2c(MICROBIT_PIN_SDA, MICROBIT_PIN_SCL),
     serial(USBTX, USBRX),
     MessageBus(),
-    display(MICROBIT_ID_DISPLAY, MICROBIT_DISPLAY_WIDTH, MICROBIT_DISPLAY_HEIGHT),
     buttonA(MICROBIT_ID_BUTTON_A,MICROBIT_PIN_BUTTON_A, MICROBIT_BUTTON_ALL_EVENTS),
     buttonB(MICROBIT_ID_BUTTON_B,MICROBIT_PIN_BUTTON_B, MICROBIT_BUTTON_ALL_EVENTS),
     buttonAB(MICROBIT_ID_BUTTON_AB,MICROBIT_ID_BUTTON_A,MICROBIT_ID_BUTTON_B),
@@ -145,10 +110,7 @@ MicroBit::MicroBit() :
        MICROBIT_ID_IO_P9,MICROBIT_ID_IO_P10,MICROBIT_ID_IO_P11,
        MICROBIT_ID_IO_P12,MICROBIT_ID_IO_P13,MICROBIT_ID_IO_P14,
        MICROBIT_ID_IO_P15,MICROBIT_ID_IO_P16,MICROBIT_ID_IO_P19,
-       MICROBIT_ID_IO_P20),
-    bleManager(),
-    radio(MICROBIT_ID_RADIO),
-    ble(NULL)
+       MICROBIT_ID_IO_P20)
 {
 }
 
@@ -165,8 +127,6 @@ MicroBit::MicroBit() :
   */
 void MicroBit::init()
 {
-    //add the display to the systemComponent array
-    addSystemComponent(&uBit.display);
 
     //add the compass and accelerometer to the idle array
     addIdleComponent(&uBit.accelerometer);
@@ -193,6 +153,8 @@ void MicroBit::init()
   */
 void MicroBit::compassCalibrator(MicroBitEvent)
 {
+    /** TO DO -- Reimplement this (or better) in Python
+
     struct Point
     {
         uint8_t x;
@@ -262,7 +224,7 @@ void MicroBit::compassCalibrator(MicroBitEvent)
         img.clear();
 
         // Turn on any pixels that have been visited.
-        for (int i=0; i<PERIMETER_POINTS; i++)
+        for (int i=0; i < PERIMETER_POINTS; i++)
             if (perimeter[i].on)
                 img.setPixelValue(perimeter[i].x, perimeter[i].y, 255);
 
@@ -273,7 +235,7 @@ void MicroBit::compassCalibrator(MicroBitEvent)
         uBit.display.image.paste(img,0,0,0);
 
         // test if we need to update the state at the users position.
-        for (int i=0; i<PERIMETER_POINTS; i++)
+        for (int i=0; i < PERIMETER_POINTS; i++)
         {
             if (cursor.x == perimeter[i].x && cursor.y == perimeter[i].y && !perimeter[i].on)
             {
@@ -317,63 +279,7 @@ void MicroBit::compassCalibrator(MicroBitEvent)
     display.clear();
     display.print(smiley, 0, 0, 0, 1500);
     display.clear();
-}
-
-/**
-  * Return the friendly name for this device.
-  *
-  * @return A string representing the friendly name of this device.
-  */
-ManagedString MicroBit::getName()
-{
-    char nameBuffer[MICROBIT_NAME_LENGTH];
-    const uint8_t codebook[MICROBIT_NAME_LENGTH][MICROBIT_NAME_CODE_LETTERS] =
-    {
-        {'z', 'v', 'g', 'p', 't'},
-        {'u', 'o', 'i', 'e', 'a'},
-        {'z', 'v', 'g', 'p', 't'},
-        {'u', 'o', 'i', 'e', 'a'},
-        {'z', 'v', 'g', 'p', 't'}
-    };
-
-    // We count right to left, so create a pointer to the end of the buffer.
-	char *name = nameBuffer;
-    name += MICROBIT_NAME_LENGTH;
-
-	// Derive our name from the nrf51822's unique ID.
-    uint32_t n = NRF_FICR->DEVICEID[1];
-    int ld = 1;
-    int d = MICROBIT_NAME_CODE_LETTERS;
-    int h;
-
-    for (int i=0; i<MICROBIT_NAME_LENGTH;i++)
-    {
-        h = (n % d) / ld;
-        n -= h;
-        d *= MICROBIT_NAME_CODE_LETTERS;
-        ld *= MICROBIT_NAME_CODE_LETTERS;
-        *--name = codebook[i][h];
-    }
-
-    return ManagedString(nameBuffer, MICROBIT_NAME_LENGTH);
-}
-
-/**
- * Return the serial number of this device.
- *
- * @return A string representing the serial number of this device.
- */
-ManagedString MicroBit::getSerial()
-{
-    // We take to 16 bit numbers here, as we want the full range of ID bits, but don't want negative numbers...
-    int n1 = NRF_FICR->DEVICEID[1] & 0xffff;
-    int n2 = (NRF_FICR->DEVICEID[1] >> 16) & 0xffff;
-
-    // Simply concat the two numbers.
-    ManagedString s1 = ManagedString(n1);
-    ManagedString s2 = ManagedString(n2);
-
-    return s1 + s2;
+    */
 }
 
 /**
@@ -493,36 +399,24 @@ void MicroBit::seedRandom()
 {
     randomValue = 0;
 
-    if(uBit.ble)
+    // Othwerwise we can access the hardware RNG directly.
+
+    // Start the Random number generator. No need to leave it running... I hope. :-)
+    NRF_RNG->TASKS_START = 1;
+
+    for(int i = 0; i < 4; i++)
     {
-        // If Bluetooth is enabled, we need to go through the Nordic software to safely do this.
-        uint32_t result = sd_rand_application_vector_get((uint8_t*)&randomValue, sizeof(randomValue));
+        // Clear the VALRDY EVENT
+        NRF_RNG->EVENTS_VALRDY = 0;
 
-        // If we couldn't get the random bytes then at least make the seed non-zero.
-        if (result != NRF_SUCCESS)
-            randomValue = 0xBBC5EED;
+        // Wait for a number ot be generated.
+        while(NRF_RNG->EVENTS_VALRDY == 0);
+
+        randomValue = (randomValue << 8) | ((int) NRF_RNG->VALUE);
     }
-    else
-    {
-        // Othwerwise we can access the hardware RNG directly.
 
-        // Start the Random number generator. No need to leave it running... I hope. :-)
-        NRF_RNG->TASKS_START = 1;
-
-        for(int i = 0; i < 4; i++)
-        {
-            // Clear the VALRDY EVENT
-            NRF_RNG->EVENTS_VALRDY = 0;
-
-            // Wait for a number ot be generated.
-            while(NRF_RNG->EVENTS_VALRDY == 0);
-
-            randomValue = (randomValue << 8) | ((int) NRF_RNG->VALUE);
-        }
-
-        // Disable the generator to save power.
-        NRF_RNG->TASKS_STOP = 1;
-    }
+    // Disable the generator to save power.
+    NRF_RNG->TASKS_STOP = 1;
 }
 
 
@@ -704,15 +598,4 @@ unsigned long MicroBit::systemTime()
 const char *MicroBit::systemVersion()
 {
     return MICROBIT_DAL_VERSION;
-}
-
-/**
-  * Triggers a microbit panic where an infinite loop will occur swapping between the panicFace and statusCode if provided.
-  *
-  * @param statusCode the status code of the associated error. Status codes must be in the range 0-255.
-  */
-void MicroBit::panic(int statusCode)
-{
-    //show error and enter infinite while
-    uBit.display.error(statusCode);
 }
