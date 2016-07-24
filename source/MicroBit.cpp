@@ -69,10 +69,10 @@ void MicroBit::onABListenerRegisteredEvent(MicroBitEvent evt)
     // causal ordering.
 
     buttonA.setEventConfiguration(MICROBIT_BUTTON_SIMPLE_EVENTS); 
-    buttonB.setEventConfiguration(MICROBIT_BUTTON_SIMPLE_EVENTS); 
-    buttonAB.setEventConfiguration(MICROBIT_BUTTON_ALL_EVENTS); 
+    buttonB.setEventConfiguration(MICROBIT_BUTTON_SIMPLE_EVENTS);
 }
 
+uint32_t ticks;
 
 /**
   * Constructor.
@@ -97,10 +97,8 @@ MicroBit::MicroBit() :
     flags(0x00),
     i2c(MICROBIT_PIN_SDA, MICROBIT_PIN_SCL),
     serial(USBTX, USBRX),
-    MessageBus(),
     buttonA(MICROBIT_ID_BUTTON_A,MICROBIT_PIN_BUTTON_A, MICROBIT_BUTTON_ALL_EVENTS),
     buttonB(MICROBIT_ID_BUTTON_B,MICROBIT_PIN_BUTTON_B, MICROBIT_BUTTON_ALL_EVENTS),
-    buttonAB(MICROBIT_ID_BUTTON_AB,MICROBIT_ID_BUTTON_A,MICROBIT_ID_BUTTON_B),
     accelerometer(MICROBIT_ID_ACCELEROMETER, MMA8653_DEFAULT_ADDR),
     compass(MICROBIT_ID_COMPASS, MAG3110_DEFAULT_ADDR),
     thermometer(MICROBIT_ID_THERMOMETER),
@@ -131,7 +129,6 @@ void MicroBit::init()
     //add the compass and accelerometer to the idle array
     addIdleComponent(&uBit.accelerometer);
     addIdleComponent(&uBit.compass);
-    addIdleComponent(&uBit.MessageBus);
 
     // Seed our random number generator
     seedRandom();
@@ -141,9 +138,6 @@ void MicroBit::init()
     // Start refreshing the Matrix Display
     systemTicker.attach_us(this, &MicroBit::systemTick, tickPeriod * 1000);
 
-    // Register our compass calibration algorithm.
-    MessageBus.listen(MICROBIT_ID_COMPASS, MICROBIT_COMPASS_EVT_CALIBRATE, this, &MicroBit::compassCalibrator, MESSAGE_BUS_LISTENER_IMMEDIATE);
-    MessageBus.listen(MICROBIT_ID_MESSAGE_BUS_LISTENER, MICROBIT_ID_BUTTON_AB, this, &MicroBit::onABListenerRegisteredEvent,  MESSAGE_BUS_LISTENER_IMMEDIATE);
 }
 
 /**
@@ -297,10 +291,7 @@ void MicroBit::reset()
 
 /**
   * Delay for the given amount of time.
-  * If the scheduler is running, this will deschedule the current fiber and perform
-  * a power efficent, concurrent sleep operation.
-  * If the scheduler is disabled or we're running in an interrupt context, this
-  * will revert to a busy wait.
+  * This will revert to a busy wait.
   *
   * @note Values of below below the scheduling period (typical 6ms) tend to lose resolution.
   *
@@ -318,10 +309,7 @@ int MicroBit::sleep(int milliseconds)
     if(milliseconds < 0)
         return MICROBIT_INVALID_PARAMETER;
 
-    if (flags & MICROBIT_FLAG_SCHEDULER_RUNNING)
-        fiber_sleep(milliseconds);
-    else
-        wait_ms(milliseconds);
+    wait_ms(milliseconds);
 
     return MICROBIT_OK;
 }
@@ -430,21 +418,10 @@ void MicroBit::seedRandom(uint32_t seed)
 
 
 /**
-  * Periodic callback. Used by MicroBitDisplay, FiberScheduler and buttons.
+  * Periodic callback. Used by buttons.
   */
 void MicroBit::systemTick()
 {
-    // Scheduler callback. We do this here just as a single timer is more efficient. :-)
-    if (uBit.flags & MICROBIT_FLAG_SCHEDULER_RUNNING)
-        scheduler_tick();
-
-    //work out if any idle components need processing, if so prioritise the idle thread
-    for(int i = 0; i < MICROBIT_IDLE_COMPONENTS; i++)
-        if(idleThreadComponents[i] != NULL && idleThreadComponents[i]->isIdleCallbackNeeded())
-        {
-            fiber_flags |= MICROBIT_FLAG_DATA_READY;
-            break;
-        }
 
     //update any components in the systemComponents array
     for(int i = 0; i < MICROBIT_SYSTEM_COMPONENTS; i++)
@@ -462,7 +439,6 @@ void MicroBit::systemTasks()
         if(idleThreadComponents[i] != NULL)
             idleThreadComponents[i]->idleTick();
 
-    fiber_flags &= ~MICROBIT_FLAG_DATA_READY;
 }
 
 /**
@@ -553,7 +529,7 @@ int MicroBit::removeIdleComponent(MicroBitComponent *component)
  * @param speedMs the speed in milliseconds
  * @return MICROBIT_OK on success. MICROBIT_INVALID_PARAMETER is returned if speedUs < 1
  *
- * @note this will also modify the value that is added to ticks in MiroBitFiber:scheduler_tick()
+ * @note this will also modify the value that is added to ticks.
  */
 int MicroBit::setTickPeriod(int speedMs)
 {

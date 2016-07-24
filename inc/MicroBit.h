@@ -29,31 +29,24 @@ DEALINGS IN THE SOFTWARE.
 #include "mbed.h"
 
 #include "MicroBitConfig.h"
-#include "MicroBitHeapAllocator.h"
 #include "ErrorNo.h"
 #include "Matrix4.h"
 #include "MicroBitCompat.h"
 #include "MicroBitComponent.h"
-#include "ManagedType.h"
-#include "ManagedString.h"
 #include "MicroBitFont.h"
 #include "MicroBitEvent.h"
 #include "DynamicPwm.h"
 #include "MicroBitI2C.h"
-#include "MESEvents.h"
 
 #include "MicroBitButton.h"
 #include "MicroBitPin.h"
 #include "MicroBitCompass.h"
 #include "MicroBitAccelerometer.h"
 #include "MicroBitThermometer.h"
-#include "MicroBitMultiButton.h"
 
 #include "MicroBitSerial.h"
 #include "MicroBitIO.h"
 
-#include "MicroBitFiber.h"
-#include "MicroBitMessageBus.h"
 
 // MicroBit::flags values
 #define MICROBIT_FLAG_SCHEDULER_RUNNING         0x00000001
@@ -75,6 +68,7 @@ DEALINGS IN THE SOFTWARE.
 
 #define MICROBIT_DEFAULT_TICK_PERIOD            FIBER_TICK_PERIOD_MS
 
+extern uint32_t ticks;
 
 /**
  * Resets the micro:bit.
@@ -117,13 +111,10 @@ class MicroBit
     // Array of components which are iterated during idle thread execution, isIdleCallbackNeeded is polled during a systemTick.
     MicroBitComponent*      idleThreadComponents[MICROBIT_IDLE_COMPONENTS];
 
-    // Device level Message Bus abstraction
-    MicroBitMessageBus      MessageBus;
 
     // Member variables to represent each of the core components on the device.
     MicroBitButton          buttonA;
     MicroBitButton          buttonB;
-    MicroBitMultiButton     buttonAB;
     MicroBitAccelerometer   accelerometer;
     MicroBitCompass         compass;
     MicroBitThermometer     thermometer;
@@ -162,20 +153,6 @@ class MicroBit
       * @endcode
       */
     void init();
-
-    /**
-     * Return the friendly name for this device.
-     *
-     * @return A string representing the friendly name of this device.
-     */
-    ManagedString getName();
-
-    /**
-     * Return the serial number of this device.
-     *
-     * @return A string representing the serial number of this device.
-     */
-    ManagedString getSerial();
 
     /**
       * Will reset the micro:bit when called.

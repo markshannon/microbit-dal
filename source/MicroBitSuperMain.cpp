@@ -49,9 +49,6 @@ int main()
 
 #endif    
 
-    // Bring up fiber scheduler
-    scheduler_init();
-
     // Bring up random number generator, BLE, display and system timers.    
     uBit.init();
 
@@ -59,11 +56,6 @@ int main()
     uBit.sleep(100);
 
     app_main();
-
-    // If app_main exits, there may still be other fibers running, registered event handlers etc.
-    // Simply release this fiber, which will mean we enter the scheduler. Worse case, we then
-    // sit in the idle task forever, in a power efficient sleep.
-    release_fiber();
 
     // We should never get here, but just in case.
     while(1);

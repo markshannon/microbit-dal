@@ -28,14 +28,15 @@ DEALINGS IN THE SOFTWARE.
 
 #include "mbed.h"
 
-enum MicroBitEventLaunchMode
-{
-    CREATE_ONLY,                        
-    CREATE_AND_QUEUE,
-    CREATE_AND_FIRE
-};
+extern "C" {
 
-#define MICROBIT_EVENT_DEFAULT_LAUNCH_MODE     CREATE_AND_QUEUE
+/** This needs to be implemented by the runtime using this library */
+
+extern void microbit_event(
+    uint16_t source,         // ID of the MicroBit Component that generated the event e.g. MICROBIT_ID_BUTTON_A.
+    uint16_t value);         // Component specific code indicating the cause of the event.
+
+}
 
 /**
   * Class definition for a MicrobitEvent
@@ -44,13 +45,6 @@ enum MicroBitEventLaunchMode
 class MicroBitEvent
 {
     public:
-
-    //These are public at the moment for backwards compatability with old code
-    //will be refactored in the future!
-    
-    uint16_t source;         // ID of the MicroBit Component that generated the event e.g. MICROBIT_ID_BUTTON_A. 
-    uint16_t value;          // Component specific code indicating the cause of the event.
-    uint32_t timestamp;      // Time at which the event was generated. ms since power on.
 
     /**
       * Constructor. 
@@ -73,39 +67,10 @@ class MicroBitEvent
       * @endcode
       */
    
-    MicroBitEvent(uint16_t source, uint16_t value, MicroBitEventLaunchMode mode = MICROBIT_EVENT_DEFAULT_LAUNCH_MODE);  
-    
-    /**
-      * Default constructor - initialises all values, and sets timestamp to the current time.
-      */ 
-    MicroBitEvent(); 
+    inline MicroBitEvent(uint16_t source, uint16_t value) {
+        microbit_event(source, value);
+    }
 
-    /**
-      * Fires the represented event onto the message bus using the default configuration.
-      */
-    void fire();
-
-    /**
-      * Fires the represented event onto the message bus.
-      * @param mode Configuration of how the event is processed.
-      */
-    void fire(MicroBitEventLaunchMode mode);
-};
-
-/**
-  * Enclosing class to hold a chain of events.
-  */
-struct MicroBitEventQueueItem
-{
-    MicroBitEvent evt;
-    MicroBitEventQueueItem *next;
-
-    /**
-      * Constructor. 
-      * Creates a new MicroBitEventQueueItem.
-      * @param evt The event that is to be queued.
-      */
-    MicroBitEventQueueItem(MicroBitEvent evt);
 };
 
 #endif

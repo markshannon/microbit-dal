@@ -31,14 +31,10 @@ enable_language(ASM)
 set(YOTTA_AUTO_MICROBIT-DAL_CPP_FILES
     "MicroBitSuperMain.cpp"
     "MicroBitI2C.cpp"
-    "MicroBitMultiButton.cpp"
     "MicroBitFont.cpp"
     "MicroBit.cpp"
     "MicroBitButton.cpp"
-    "MicroBitMessageBus.cpp"
     "MicroBitCompass.cpp"
-    "MicroBitEvent.cpp"
-    "MicroBitFiber.cpp"
     "Matrix4.cpp"
     "MicroBitAccelerometer.cpp"
     "MicroBitThermometer.cpp"
@@ -47,8 +43,6 @@ set(YOTTA_AUTO_MICROBIT-DAL_CPP_FILES
     "DynamicPwm.cpp"
     "MicroBitPin.cpp"
     "MicroBitSerial.cpp"
-    "MicroBitListener.cpp"
-    "MemberFunctionCallback.cpp"
 )
 
 execute_process(WORKING_DIRECTORY "../../yotta_modules/${PROJECT_NAME}" COMMAND "git" "log" "--pretty=format:%h" "-n" "1" OUTPUT_VARIABLE git_hash)
