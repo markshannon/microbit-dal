@@ -28,6 +28,11 @@ DEALINGS IN THE SOFTWARE.
 
 #include "mbed.h"
 
+// Macros to override overrides the 'malloc' and 'delete' functions globally, and redirects calls
+// to the runtime allocator.
+#define malloc(X) microbit_malloc( X )
+#define free(X) microbit_free( X )
+
 #include "MicroBitConfig.h"
 #include "ErrorNo.h"
 #include "Matrix4.h"
@@ -302,6 +307,24 @@ extern MicroBit uBit;
 // Entry point for application programs. Called after the super-main function
 // has initialized the device and runtime environment.
 extern "C" void app_main();
+
+// The runtime will need to provide memory mangement functions:
+
+/**
+  * Attempt to allocate a given amount of memory from any of our configured heap areas.
+  * @param size The amount of memory, in bytes, to allocate.
+  * @return A pointer to the allocated memory, or NULL if insufficient memory is available.
+  */
+extern void *microbit_malloc(size_t size);
+
+/**
+  * Release a given area of memory from the heap.
+  * @param mem The memory area to release.
+  */
+extern void microbit_free(void *mem);
+
+
+
 
 
 #endif
