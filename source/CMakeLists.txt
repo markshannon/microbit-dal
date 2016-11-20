@@ -33,15 +33,11 @@ set(YOTTA_AUTO_MICROBIT-DAL_CPP_FILES
     "MicroBitI2C.cpp"
     "MicroBitFont.cpp"
     "MicroBit.cpp"
-    "MicroBitButton.cpp"
     "MicroBitCompass.cpp"
     "Matrix4.cpp"
     "MicroBitAccelerometer.cpp"
     "MicroBitThermometer.cpp"
-    "MicroBitIO.cpp"
     "MicroBitCompat.cpp"
-    "DynamicPwm.cpp"
-    "MicroBitPin.cpp"
     "MicroBitSerial.cpp"
 )
 

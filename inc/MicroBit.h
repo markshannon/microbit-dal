@@ -40,7 +40,6 @@ DEALINGS IN THE SOFTWARE.
 #include "MicroBitComponent.h"
 #include "MicroBitFont.h"
 #include "MicroBitEvent.h"
-#include "DynamicPwm.h"
 #include "MicroBitI2C.h"
 
 #include "MicroBitButton.h"
@@ -50,7 +49,6 @@ DEALINGS IN THE SOFTWARE.
 #include "MicroBitThermometer.h"
 
 #include "MicroBitSerial.h"
-#include "MicroBitIO.h"
 
 
 // MicroBit::flags values
@@ -90,7 +88,6 @@ class MicroBit
     private:
 
     void                    compassCalibrator(MicroBitEvent e);
-    void                    onABListenerRegisteredEvent(MicroBitEvent evt);
     uint32_t                randomValue;
 
     //the current tick period in MS
@@ -118,14 +115,10 @@ class MicroBit
 
 
     // Member variables to represent each of the core components on the device.
-    MicroBitButton          buttonA;
-    MicroBitButton          buttonB;
     MicroBitAccelerometer   accelerometer;
     MicroBitCompass         compass;
     MicroBitThermometer     thermometer;
 
-    //An object of available IO pins on the device
-    MicroBitIO              io;
     /**
       * Constructor.
       * Create a representation of a MicroBit device as a global singleton.
